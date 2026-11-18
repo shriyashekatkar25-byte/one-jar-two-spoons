@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One Jar, Two Spoons</title>
+<meta name="description" content="APM Lab: should a shared Genie Code budget (CLI + workspace) get a daily per-user cap? A Monte Carlo dart board of simulated months decides. Stats 102C Ch1.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Gochi+Hand&family=Oswald:wght@500;700&family=Poppins:wght@600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --terra:#C6704C; --terra-deep:#A85A3A; --ink:#111111;
+  --paper:#FFFFFF; --paper-2:#F7F4EE; --marker:#C8102E; --marker-soft:#F6D9DC;
+  --blush:#FCEFF6; --magenta:#A3207F; --magenta-2:#7E1762;
+  --shelf:#2B343D; --shelf-2:#3D4A55; --walnut:#5E4433; --sub:#F1EA5E;
+  --muted:#5b5b5b; --line:#e4ddd2;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper-2);color:var(--ink);font-family:"Archivo",system-ui,sans-serif;font-size:17px;line-height:1.55;overflow-x:hidden}
+a{color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+h2{font-family:"Archivo";font-stretch:75%;font-weight:900;text-transform:uppercase;font-size:clamp(30px,5vw,52px);line-height:.98;margin:0 0 18px;letter-spacing:-.5px}
+.kicker{font-family:"Gochi Hand",cursive;color:var(--marker);font-size:24px;margin:0 0 4px}
+section{padding:64px 0}
+code,pre{font-family:"JetBrains Mono",monospace}
+
+/* ---------- HERO (pin: Bloom PG&D terracotta poster) ---------- */
+.hero{background:var(--terra);position:relative;overflow:hidden;padding:56px 0 64px}
+.hero::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+.hero-grid{display:grid;grid-template-columns:1.35fr .9fr;gap:36px;align-items:center;position:relative;z-index:1}
+.hero h1{font-family:"Archivo";font-stretch:68%;font-weight:900;text-transform:uppercase;font-size:clamp(44px,8.4vw,104px);line-height:.9;margin:0;letter-spacing:-1px}
+.hero h1 .lite{font-weight:500}
+.hero .launch{margin:26px 0 6px;font-weight:700;font-size:17px;max-width:620px}
+.hero .launch a{text-decoration-thickness:2px;text-underline-offset:3px}
+.byline{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.chip{background:var(--ink);color:#fff;font-weight:700;font-size:14px;padding:7px 14px;border-radius:999px}
+.chip.alt{background:transparent;border:2px solid var(--ink);color:var(--ink)}
+.badge-wrap{position:relative;justify-self:center;width:min(360px,80vw);aspect-ratio:1}
+.badge-wrap svg{width:100%;height:100%;display:block}
+.spin{transform-origin:50% 50%;animation:spin 28s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.slosh{animation:slosh 3.4s ease-in-out infinite;transform-origin:50% 60%}
+@keyframes slosh{0%,100%{transform:translateX(-6px)}50%{transform:translateX(6px)}}
+
+/* ---------- CARDS (pin: handwritten red marker on white) ---------- */
+.board{columns:3 280px;column-gap:20px}
+.card{break-inside:avoid;background:var(--paper);border-radius:18px;padding:22px 22px 20px;margin:0 0 20px;box-shadow:0 1px 0 rgba(0,0,0,.06),0 10px 24px -14px rgba(0,0,0,.35);position:relative}
+.card h3{font-family:"Gochi Hand",cursive;color:var(--marker);font-weight:400;font-size:30px;line-height:1.05;margin:0 0 10px}
+.card p{margin:0 0 10px}
+.card ul{margin:0;padding-left:20px}
+.card li{margin:4px 0}
+.card .tape{position:absolute;top:-10px;left:50%;width:84px;height:22px;transform:translateX(-50%) rotate(-3deg);background:rgba(200,16,46,.16);border-radius:3px}
+.pinnote{font-family:"Gochi Hand";color:var(--muted);font-size:18px;margin-top:8px}
+.guard{display:flex;justify-content:space-between;gap:10px;border-bottom:2px dashed var(--marker-soft);padding:7px 0}
+.guard b{color:var(--marker);white-space:nowrap}
+.btn{font-family:"Gochi Hand",cursive;font-size:22px;background:var(--paper);color:var(--marker);border:2.5px solid var(--marker);border-radius:14px 18px 12px 16px;padding:6px 16px;cursor:pointer;line-height:1.1}
+.btn:hover,.btn:focus-visible{background:var(--marker);color:#fff;outline:none}
+.btn.solid{background:var(--marker);color:#fff}
+.btn.solid:hover{background:#9c0c23}
+
+/* ---------- SIM ROOM (pin: @andkogaa record-shelf film still) ---------- */
+.room{background:var(--shelf);color:#f3f1ea;position:relative;overflow:hidden}
+.room::before{content:"";position:absolute;inset:0;opacity:.55;pointer-events:none;
+  background:
+   repeating-linear-gradient(90deg,rgba(0,0,0,.0) 0 9px,rgba(0,0,0,.22) 9px 11px,rgba(255,255,255,.03) 11px 19px,rgba(0,0,0,.18) 19px 21px,rgba(94,68,51,.25) 21px 33px,rgba(0,0,0,.2) 33px 35px),
+   linear-gradient(180deg,rgba(94,68,51,.35),rgba(43,52,61,0) 30%,rgba(43,52,61,0) 70%,rgba(94,68,51,.35))}
+.room::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.18;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E")}
+.room .wrap{position:relative;z-index:1}
+.room h2{font-family:"Oswald";font-stretch:normal;font-weight:700;color:var(--sub);text-transform:none;font-size:clamp(30px,5vw,50px);line-height:1.02;text-shadow:0 2px 0 rgba(0,0,0,.45)}
+.room .kicker{color:var(--sub);font-family:"Oswald";font-size:16px;letter-spacing:2px;text-transform:uppercase}
+.room p.lede{max-width:760px;color:#e7e3d9}
+.sim-grid{display:grid;grid-template-columns:330px 1fr;gap:22px;margin-top:20px}
+.panel{background:rgba(20,25,30,.62);border:1px solid rgba(241,234,94,.22);border-radius:16px;padding:18px;backdrop-filter:blur(2px)}
+.ctrl{margin-bottom:16px}
+.ctrl label{display:flex;justify-content:space-between;font-family:"Oswald";font-weight:500;letter-spacing:.4px;font-size:15px;color:#f3f1ea}
+.ctrl output{color:var(--sub);font-weight:700}
+.ctrl small{display:block;color:#c9c4b6;font-size:13px;line-height:1.35;margin-top:2px}
+input[type=range]{width:100%;accent-color:var(--sub);height:28px}
+.room .btn{background:transparent;color:var(--sub);border-color:var(--sub)}
+.room .btn:hover,.room .btn:focus-visible{background:var(--sub);color:var(--shelf)}
+.room .btn.solid{background:var(--sub);color:var(--shelf)}
+.btnrow{display:flex;flex-wrap:wrap;gap:10px}
+canvas{display:block;width:100%;border-radius:10px;background:rgba(10,13,16,.55)}
+.cap{font-family:"Oswald";font-size:14px;letter-spacing:.5px;color:#d8d3c4;margin:8px 2px 14px}
+.cap b{color:var(--sub)}
+.subtitle{font-family:"Oswald";font-weight:500;color:var(--sub);font-size:clamp(18px,2.4vw,24px);text-align:center;margin:10px 0 0;text-shadow:0 2px 0 #000}
+
+/* ---------- KPI BADGES (pin: The Superhero Guide pink affirmation) ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}
+.kpi{background:var(--blush);color:var(--magenta);border-radius:20px;padding:16px 14px;text-align:center;box-shadow:inset 0 0 0 3px #f6d7e8}
+.kpi .v{font-family:"Poppins";font-weight:800;font-size:clamp(24px,3vw,34px);line-height:1.05}
+.kpi .l{font-family:"Poppins";font-weight:600;font-size:13px;line-height:1.25;color:var(--magenta-2);margin-top:6px}
+.kpi.pass{box-shadow:inset 0 0 0 3px #e9a9cf}
+.kpi .st{display:inline-block;margin-top:8px;font-family:"Poppins";font-weight:600;font-size:12px;padding:2px 10px;border-radius:99px;background:#fff;color:var(--magenta-2)}
+.kpi.fail .st{background:var(--magenta);color:#fff}
+
+/* ---------- MEMO ---------- */
+.memo{background:var(--paper);border-radius:22px;padding:28px;box-shadow:0 14px 40px -24px rgba(0,0,0,.4);position:relative}
+.memo .stamp{position:absolute;right:22px;top:20px;font-family:"Gochi Hand";color:var(--marker);border:3px solid var(--marker);border-radius:12px;padding:2px 12px;transform:rotate(6deg);font-size:22px}
+.memo dl{display:grid;grid-template-columns:150px 1fr;gap:10px 18px;margin:16px 0 0}
+.memo dt{font-family:"Gochi Hand";color:var(--marker);font-size:22px;line-height:1.2}
+.memo dd{margin:0}
+.vp{margin-top:18px;background:var(--blush);color:var(--magenta-2);border-radius:16px;padding:16px 18px;font-family:"Poppins";font-weight:600}
+.math{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.eq{font-family:"JetBrains Mono";background:var(--paper-2);border-radius:10px;padding:10px 12px;font-size:14.5px;overflow-x:auto}
+pre{background:#1d2328;color:#f1ead6;border-radius:14px;padding:16px;overflow-x:auto;font-size:13.5px;line-height:1.5;margin:0}
+.code-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.code-grid>*,.math>*,.sim-grid>*,.hero-grid>*{min-width:0}
+.code-grid h3{font-family:"Gochi Hand";color:var(--marker);font-weight:400;font-size:26px;margin:0 0 8px}
+
+footer{background:var(--ink);color:#e9e5dc;padding:30px 0 36px}
+footer p{margin:6px 0}
+footer .disc{font-weight:700}
+footer .credits{font-size:11px;color:#b5b0a6;line-height:1.6}
+footer .credits a{color:#cfc9bd}
+
+@media (max-width:900px){
+  .hero-grid,.sim-grid,.math,.code-grid{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .memo dl{grid-template-columns:1fr}
+  .memo dt{margin-top:6px}
+  .badge-wrap{width:min(260px,70vw)}
+}
+@media (max-width:420px){
+  .wrap{padding:0 16px}
+  section{padding:46px 0}
+  .memo{padding:22px 18px}
+  .memo .stamp{position:static;display:inline-block;margin-bottom:8px}
+}
+@media (prefers-reduced-motion:reduce){
+  .spin,.slosh{animation:none}
+  *{scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1>I share the jar<br><span class="lite">so every builder</span><br>finishes the month.</h1>
+      <p class="launch">Mirrors: <a href="https://docs.databricks.com/aws/en/release-notes/product/2026/november" target="_blank" rel="noopener">Genie Code CLI goes GA (Nov 18, 2026) and its usage counts toward the same Genie budget as the workspace</a>.</p>
+      <div class="byline">
+        <span class="chip">Shriya Shekatkar</span>
+        <span class="chip alt">UCLA · Stats 102C Monte Carlo Methods</span>
+        <span class="chip alt">APM Lab · Ch1</span>
+      </div>
+    </div>
+    <div class="badge-wrap" aria-hidden="true">
+      <svg viewBox="0 0 300 300">
+        <defs>
+          <path id="ring" d="M150,150 m-118,0 a118,118 0 1,1 236,0 a118,118 0 1,1 -236,0"/>
+          <clipPath id="jarclip"><path d="M112 112 h76 q10 0 10 12 v96 q0 26 -26 26 h-54 q-26 0 -26 -26 v-96 q0 -12 10 -12z"/></clipPath>
+          <pattern id="dots" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="1.6" fill="#111" opacity=".25"/></pattern>
+        </defs>
+        <circle cx="150" cy="150" r="146" fill="#111"/>
+        <circle cx="150" cy="150" r="134" fill="#F7F4EE"/>
+        <g class="spin"><text font-family="Archivo" font-weight="800" font-size="17" letter-spacing="3.2" fill="#111"><textPath href="#ring">ONE SHARED BUDGET · TWO SURFACES · ZERO EMPTY DAY-29s · </textPath></text></g>
+        <circle cx="150" cy="150" r="98" fill="#C6704C"/>
+        <circle cx="150" cy="150" r="98" fill="url(#dots)"/>
+        <!-- jar -->
+        <rect x="118" y="94" width="64" height="16" rx="5" fill="#111"/>
+        <path d="M112 112 h76 q10 0 10 12 v96 q0 26 -26 26 h-54 q-26 0 -26 -26 v-96 q0 -12 10 -12z" fill="#fff" stroke="#111" stroke-width="5"/>
+        <g clip-path="url(#jarclip)"><g class="slosh"><path d="M80 178 q20 -10 40 0 t40 0 t40 0 t40 0 v90 h-160z" fill="#A3207F"/><path d="M80 186 q20 -8 40 0 t40 0 t40 0 t40 0 v90 h-160z" fill="#F1EA5E" opacity=".9"/></g></g>
+        <!-- two spoons -->
+        <g transform="rotate(-24 120 120)"><rect x="113" y="40" width="10" height="92" rx="5" fill="#111"/><ellipse cx="118" cy="40" rx="15" ry="20" fill="#111"/></g>
+        <g transform="rotate(22 182 120)"><rect x="176" y="44" width="10" height="92" rx="5" fill="#C8102E"/><ellipse cx="181" cy="44" rx="15" ry="20" fill="#C8102E"/></g>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- DECISION -->
+<section>
+  <div class="wrap">
+    <p class="kicker">the decision board</p>
+    <h2>Does a shared Genie budget need a daily per-user cap?</h2>
+    <div class="board">
+      <div class="card"><span class="tape"></span>
+        <h3>Customer problem</h3>
+        <p>A data team's admin funds one monthly Genie budget. Analysts use Genie Code in the workspace a few dollars a day. Now engineers can run Genie Code CLI agent loops from a terminal, and those count against the same jar.</p>
+        <p>One stuck loop can burn a week of an analyst's usage in an afternoon. If the jar empties on day 24, the people who did nothing wrong lose the last week.</p>
+      </div>
+      <div class="card"><span class="tape"></span>
+        <h3>Proposed change</h3>
+        <p>When an admin creates a Genie budget that covers both surfaces, the setup flow pre-fills a <b>daily per-user threshold</b> (the new daily option) at a recommended dollar value, with a webhook alert when it trips.</p>
+        <p>The question this page answers: <b>what value</b>, and is it worth the friction for heavy CLI users on honest big days?</p>
+      </div>
+      <div class="card"><span class="tape"></span>
+        <h3>Success metric</h3>
+        <p><b>P(shared budget runs dry before month end) ≤ 5%</b> for teams that adopt the default, estimated from simulated months and then from real billing data.</p>
+      </div>
+      <div class="card"><span class="tape"></span>
+        <h3>Guardrails</h3>
+        <div class="guard"><span>Real CLI work days paused by the cap</span><b>≤ 5%</b></div>
+        <div class="guard"><span>Analyst workdays lost to an empty jar</span><b>≤ 1%</b></div>
+        <div class="guard"><span>Budget used (not over-throttled)</span><b>≥ 75%</b></div>
+        <div class="guard"><span>"Budget blocked me" support cases per 100 seats</span><b>no rise</b></div>
+      </div>
+      <div class="card"><span class="tape"></span>
+        <h3>Stakeholders</h3>
+        <ul>
+          <li>Account admins and FinOps owners (set the jar)</li>
+          <li>Analysts on Genie Code in the workspace</li>
+          <li>Data engineers on Genie Code CLI</li>
+          <li>Genie Code + AI Gateway eng, billing UX, support, field CS</li>
+        </ul>
+        <p class="pinnote">pin it: the person who gets blocked is rarely the person who spent it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SIMULATION -->
+<section class="room" id="sim">
+  <div class="wrap">
+    <p class="kicker">simulation room · seeded Monte Carlo</p>
+    <h2>Throw 2,000 months at the jar and count how many run dry.</h2>
+    <p class="lede">A synthetic 40-seat team. Each simulated user-day draws a spend: analysts average about $4 on workdays; CLI users about $10 with a long tail, an 8% chance of an honest big day ($30 to $120 extra), and a small chance of a runaway loop ($150 to $600). Weekends run at 15%. The pool is a hard stop once spent. Every number is simulated.</p>
+    <div class="sim-grid">
+      <div class="panel">
+        <div class="ctrl"><label for="budget">Monthly Genie budget <output id="o-budget"></output></label><input id="budget" type="range" min="5000" max="16000" step="250" value="11000"></div>
+        <div class="ctrl"><label for="cli">CLI users (of 40) <output id="o-cli"></output></label><input id="cli" type="range" min="2" max="30" step="1" value="12"><small>Everyone else uses Genie Code in the workspace.</small></div>
+        <div class="ctrl"><label for="cap">Daily per-user cap <output id="o-cap"></output></label><input id="cap" type="range" min="0" max="120" step="5" value="0"><small>0 = no daily threshold. Resets at midnight UTC.</small></div>
+        <div class="ctrl"><label for="run">Runaway-loop chance per CLI workday <output id="o-run"></output></label><input id="run" type="range" min="0" max="10" step="0.5" value="3"></div>
+        <div class="ctrl"><label for="n">Simulated months <output id="o-n"></output></label><input id="n" type="range" min="200" max="4000" step="200" value="2000"></div>
+        <div class="btnrow">
+          <button class="btn solid" id="go">Run it</button>
+          <button class="btn" id="reseed">New seed</button>
+          <button class="btn" id="usebest">Use best cap</button>
+        </div>
+        <p class="cap" style="margin-top:12px">Seed <b id="seed">2026</b> · same seed, same answer</p>
+      </div>
+      <div>
+        <canvas id="paths" height="300" aria-label="Cumulative team spend for sample simulated months against the budget line"></canvas>
+        <p class="cap">Each line is one simulated month of cumulative spend (first 80 shown). <b>Yellow</b> = budget. <b style="color:#FF8AD4">Pink dot</b> = the day that month ran dry.</p>
+        <div class="kpis" id="kpis"></div>
+        <canvas id="running" height="190" aria-label="Running estimate of the chance the budget runs dry, with 95% band"></canvas>
+        <p class="cap">Running estimate of P(dry) as months pile up, with a ±1.96·SE band. It settles because of the Law of Large Numbers.</p>
+        <canvas id="sweep" height="210" aria-label="Chance of running dry and share of real CLI days paused, across daily cap values"></canvas>
+        <p class="cap">Cap finder, same random numbers for every cap: <b>yellow</b> = P(dry), <b style="color:#FF8AD4">pink</b> = real CLI workdays paused. Dashed line = 5%.</p>
+        <p class="subtitle" id="subtitle">the jar doesn't care who spent it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MEMO -->
+<section>
+  <div class="wrap">
+    <p class="kicker">director memo · rewrites itself from the simulation</p>
+    <h2>Memo: shared-budget default</h2>
+    <div class="memo" id="memo" aria-live="polite">
+      <span class="stamp" id="stamp">DRAFT</span>
+      <dl>
+        <dt>Decision</dt><dd id="m-decision"></dd>
+        <dt>Evidence</dt><dd id="m-evidence"></dd>
+        <dt>Risks</dt><dd id="m-risks"></dd>
+        <dt>Rollout</dt><dd id="m-rollout"></dd>
+        <dt>Next step</dt><dd id="m-next"></dd>
+      </dl>
+      <div class="vp"><span style="font-weight:800">To the VP, in one sentence:</span> <span id="m-vp"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- MATH -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <p class="kicker">the math, from my Monte Carlo course</p>
+    <h2>Counting darts that land past the line</h2>
+    <div class="math">
+      <div class="card">
+        <h3>Probability = a fraction of random throws</h3>
+        <p>"Will the jar run dry?" has no tidy formula once you mix 40 people, weekends, long tails and runaway loops. So I don't solve it. I replay the month many times with a seeded random number generator and count.</p>
+        <p>Each simulated month is a coin that comes up "dry" or "not dry". If I run <i>n</i> months and <i>X</i> run dry, then X is Binomial(n, p), and the share X/n is an unbiased estimate of p.</p>
+        <div class="eq">p̂ = X / n &nbsp;&nbsp; SE = √( p̂(1−p̂) / n )</div>
+        <p style="margin-top:10px">Variance shrinks like 1/n, so 4× the months halves the error bar. The running chart shows it settling.</p>
+      </div>
+      <div class="card">
+        <h3>Expectations are just averages</h3>
+        <p>The guardrails are expected values: average analyst workdays lost, average share of real CLI days paused, average spend. Each is a sample mean over simulated months, and the Strong Law of Large Numbers says those sample means converge to the true expectations.</p>
+        <div class="eq">E[lost days] ≈ (1/n) Σ lostₖ</div>
+        <p style="margin-top:10px">Product trick: the cap finder reuses the <b>same seed</b> for every cap. The only thing that changes between columns is the policy, so differences are the policy's effect, not noise.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REAL DATA -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <p class="kicker">how I'd run it on real data</p>
+    <h2>From billing rows to a default</h2>
+    <div class="code-grid">
+      <div>
+        <h3>1 · daily spend per user and surface (SQL)</h3>
+<pre>-- illustrative: lab.genie_spend_daily is a view built on
+-- system.billing.usage (column names simplified)
+CREATE OR REPLACE TABLE lab.user_day AS
+SELECT account_id,
+       user_id,
+       usage_date,
+       surface,                    -- 'GENIE_CODE_CLI' or workspace
+       SUM(list_cost_usd) AS spend_usd
+FROM   lab.genie_spend_daily
+WHERE  usage_date &gt;= date_sub(current_date(), 90)
+GROUP  BY ALL;
+
+-- how heavy is the CLI tail?
+SELECT surface,
+       percentile_approx(spend_usd, 0.50) AS p50,
+       percentile_approx(spend_usd, 0.95) AS p95,
+       percentile_approx(spend_usd, 0.99) AS p99
+FROM   lab.user_day
+GROUP  BY surface;</pre>
+      </div>
+      <div>
+        <h3>2 · replay months with resampled days (Python)</h3>
+<pre>import numpy as np
+days = spark.table("lab.user_day").toPandas()
+rng  = np.random.default_rng(2026)
+
+def p_dry(acct, budget, cap, n=4000):
+    pool = days[days.account_id == acct].spend_usd.values
+    users, d = 40, 30
+    dry = 0
+    for _ in range(n):
+        s = rng.choice(pool, size=(d, users))  # resample real days
+        if cap: s = np.minimum(s, cap)
+        dry += s.sum() &gt;= budget
+    p = dry / n
+    return p, 1.96 * np.sqrt(p * (1 - p) / n)
+
+for cap in [0, 30, 40, 60]:
+    print(cap, p_dry("acme", 8000, cap))</pre>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="disc">Unofficial concept prototype by Shriya Shekatkar. All data is simulated. Not affiliated with any company.</p>
+    <p><a href="https://shriyashekatkar25-byte.github.io/apm-lab/">← Back to the APM Lab gallery</a></p>
+    <p class="credits">Design inspired by:
+      <a href="https://www.pinterest.com/pin/473581717091196151/" target="_blank" rel="noopener">End the Loop: Learn the Lesson, Choose Differently (Bloom PG&amp;D)</a> ·
+      <a href="https://www.pinterest.com/pin/975029388146955553/" target="_blank" rel="noopener">red-marker handwritten note (imnot_arushi.n)</a> ·
+      <a href="https://www.pinterest.com/pin/1124774075722804809/" target="_blank" rel="noopener">Hair &amp; Nails Subliminal (The Superhero Guide)</a> ·
+      <a href="https://www.pinterest.com/pin/1040472320210871008/" target="_blank" rel="noopener">record-shelf film still with yellow caption (k.ga / @andkogaa)</a>
+    </p>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TEAM=40, DAYS=30;
+let seed=2026, last=null, lastSweep=null, anim=null;
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+const isWeekend=d=>(d%7===5||d%7===6);
+
+function simulate(p,s,n,keepPaths){
+  const rnd=mulberry32(s);
+  const B=p.budget, nCli=p.cli, cap=p.cap, pr=p.run/100;
+  let dryCount=0, dryDaySum=0, lostAnalyst=0, analystWork=0, clipped=0, legitClipped=0, cliWork=0, spendSum=0;
+  const running=new Float32Array(n), paths=[];
+  for(let k=0;k<n;k++){
+    let pool=0, dry=false, dryDay=0;
+    const path=keepPaths&&k<80?new Float32Array(DAYS+1):null;
+    for(let d=0;d<DAYS;d++){
+      const we=isWeekend(d), w=we?0.15:1;
+      for(let u=0;u<TEAM;u++){
+        const u1=rnd(),u2=rnd(),u3=rnd();
+        const isCli=u<nCli;
+        let demand, runaway=false;
+        if(isCli){
+          demand=w*(-10*Math.log(1-u1));
+          if(u2<pr*w){runaway=true;demand+=150+450*u3;}
+          else if(u2>1-0.08*w){demand+=30+90*u3;}   // honest big day (backfill, refactor)
+          if(!we) cliWork++;
+        }else{
+          demand=w*(-4*Math.log(1-u1));
+          if(!we) analystWork++;
+        }
+        if(dry){ if(!isCli&&!we) lostAnalyst++; continue; }
+        let spend=demand;
+        if(cap>0&&demand>cap){spend=cap; if(isCli&&!we){clipped++; if(!runaway) legitClipped++;}}
+        pool+=spend;
+        if(pool>=B){pool=B;dry=true;dryDay=d+1;}
+      }
+      if(path) path[d+1]=pool;
+    }
+    if(dry){dryCount++;dryDaySum+=dryDay;}
+    spendSum+=pool;
+    running[k]=dryCount/(k+1);
+    if(path) paths.push({path,dryDay:dry?dryDay:0});
+  }
+  const pd=dryCount/n;
+  return {p,n,pDry:pd,se:Math.sqrt(pd*(1-pd)/n),dryDay:dryCount?dryDaySum/dryCount:0,
+    lostPct:analystWork?lostAnalyst/analystWork:0, clipPct:cliWork?clipped/cliWork:0,
+    legitPct:cliWork?legitClipped/cliWork:0, util:spendSum/n/B, running, paths};
+}
+
+const CAPS=[0,15,20,25,30,35,40,50,60,80,100,120];
+function sweep(p){ return CAPS.map(c=>{const r=simulate(Object.assign({},p,{cap:c}),seed,700,false);return {cap:c,pDry:r.pDry,legit:r.legitPct,lost:r.lostPct,util:r.util};}); }
+function best(sw){
+  const ok=sw.filter(r=>r.cap>0&&r.pDry<=0.05&&r.legit<=0.05);
+  if(!ok.length) return null;
+  return ok.reduce((a,b)=>b.cap>a.cap?b:a);  // loosest cap that still passes
+}
+
+function params(){return {budget:+$('budget').value,cli:+$('cli').value,cap:+$('cap').value,run:+$('run').value,n:+$('n').value};}
+const money=v=>'$'+Math.round(v).toLocaleString('en-US');
+const pct=(v,dp=1)=>(v*100).toFixed(dp)+'%';
+function labels(){const p=params();$('o-budget').textContent=money(p.budget);$('o-cli').textContent=p.cli;$('o-cap').textContent=p.cap?money(p.cap)+'/day':'off';$('o-run').textContent=p.run+'%';$('o-n').textContent=p.n.toLocaleString('en-US');}
+
+function setupCanvas(c){const dpr=window.devicePixelRatio||1;const w=c.clientWidth;const h=+c.getAttribute('height');c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);c.style.height=h+'px';const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w,h};}
+
+function drawPaths(r,frac){
+  const {ctx,w,h}=setupCanvas($('paths'));
+  const L=40,R=30,T=14,Bm=26, B=r.p.budget, ymax=B*1.12;
+  const X=d=>L+(w-L-R)*d/DAYS, Y=v=>T+(h-T-Bm)*(1-v/ymax);
+  ctx.clearRect(0,0,w,h);
+  ctx.font='12px Oswald, sans-serif';ctx.fillStyle='#cfc9b8';
+  for(let d=0;d<=DAYS;d+=(w<520?10:5)){ctx.fillText('day '+d,X(d)-14,h-8);}
+  ctx.strokeStyle='rgba(255,255,255,.08)';
+  for(let i=0;i<=4;i++){const y=Y(ymax*i/4);ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(w-R,y);ctx.stroke();}
+  ctx.fillText('$'+(B/1000).toFixed(1)+'k',2,Y(B)-4);
+  const upto=Math.max(1,Math.floor(DAYS*frac));
+  r.paths.forEach(o=>{
+    ctx.strokeStyle=o.dryDay?'rgba(240,120,200,.55)':'rgba(233,230,220,.28)';ctx.lineWidth=1.2;ctx.beginPath();
+    for(let d=0;d<=upto;d++){const x=X(d),y=Y(o.path[d]);d?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();
+  });
+  ctx.strokeStyle='#F1EA5E';ctx.lineWidth=2.5;ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(L,Y(B));ctx.lineTo(w-R,Y(B));ctx.stroke();
+  r.paths.forEach(o=>{ if(o.dryDay&&o.dryDay<=upto){ctx.fillStyle='#FF6FC8';ctx.beginPath();ctx.arc(X(o.dryDay),Y(B),4,0,Math.PI*2);ctx.fill();}});
+}
+function drawRunning(r){
+  const {ctx,w,h}=setupCanvas($('running'));
+  const L=40,R=12,T=12,Bm=24,n=r.n;
+  let ymax=Math.min(1,Math.max(0.1,r.pDry*2.2+0.03));
+  const X=k=>L+(w-L-R)*k/(n-1), Y=v=>T+(h-T-Bm)*(1-Math.min(v,ymax)/ymax);
+  ctx.clearRect(0,0,w,h);
+  ctx.font='12px Oswald, sans-serif';ctx.fillStyle='#cfc9b8';
+  ctx.fillText(pct(ymax,0),4,T+8);ctx.fillText('0%',12,h-Bm);ctx.fillText('months →',w-70,h-6);
+  const start=Math.min(20,n-1);
+  ctx.fillStyle='rgba(241,234,94,.18)';ctx.beginPath();
+  for(let k=start;k<n;k++){const p=r.running[k],se=1.96*Math.sqrt(Math.max(p*(1-p),1e-9)/(k+1));const y=Y(p+se);k===start?ctx.moveTo(X(k),y):ctx.lineTo(X(k),y);}
+  for(let k=n-1;k>=start;k--){const p=r.running[k],se=1.96*Math.sqrt(Math.max(p*(1-p),1e-9)/(k+1));ctx.lineTo(X(k),Y(Math.max(0,p-se)));}
+  ctx.closePath();ctx.fill();
+  ctx.strokeStyle='#F1EA5E';ctx.lineWidth=2;ctx.beginPath();
+  for(let k=start;k<n;k++){const y=Y(r.running[k]);k===start?ctx.moveTo(X(k),y):ctx.lineTo(X(k),y);}ctx.stroke();
+  ctx.setLineDash([5,5]);ctx.strokeStyle='rgba(255,111,200,.8)';ctx.beginPath();ctx.moveTo(L,Y(.05));ctx.lineTo(w-R,Y(.05));ctx.stroke();ctx.setLineDash([]);
+}
+function drawSweep(sw,cur){
+  const {ctx,w,h}=setupCanvas($('sweep'));
+  const L=40,R=30,T=14,Bm=28;
+  const ymax=Math.max(0.12,...sw.map(r=>Math.max(r.pDry,r.legit)))*1.08;
+  const X=i=>L+(w-L-R)*i/(sw.length-1), Y=v=>T+(h-T-Bm)*(1-v/ymax);
+  ctx.clearRect(0,0,w,h);
+  ctx.font='11px Oswald, sans-serif';ctx.fillStyle='#cfc9b8';
+  sw.forEach((r,i)=>{ if(w>520||i%2===0) ctx.fillText(r.cap?'$'+r.cap:'off',X(i)-9,h-9);});
+  ctx.fillText(pct(ymax,0),4,T+8);
+  ctx.setLineDash([5,5]);ctx.strokeStyle='rgba(255,255,255,.45)';ctx.beginPath();ctx.moveTo(L,Y(.05));ctx.lineTo(w-R,Y(.05));ctx.stroke();ctx.setLineDash([]);
+  const ci=sw.findIndex(r=>r.cap===cur);
+  if(ci>=0){ctx.fillStyle='rgba(241,234,94,.12)';ctx.fillRect(X(ci)-12,T,24,h-T-Bm);}
+  [['pDry','#F1EA5E'],['legit','#FF6FC8']].forEach(([k,c])=>{
+    ctx.strokeStyle=c;ctx.lineWidth=2.5;ctx.beginPath();sw.forEach((r,i)=>{i?ctx.lineTo(X(i),Y(r[k])):ctx.moveTo(X(i),Y(r[k]));});ctx.stroke();
+    ctx.fillStyle=c;sw.forEach((r,i)=>{ctx.beginPath();ctx.arc(X(i),Y(r[k]),3.5,0,Math.PI*2);ctx.fill();});
+  });
+}
+
+function kpis(r){
+  const items=[
+    {v:pct(r.pDry),l:'chance the jar runs dry (±'+pct(1.96*r.se)+')',ok:r.pDry<=0.05},
+    {v:r.dryDay?'day '+r.dryDay.toFixed(1):'none',l:'average dry-out day, when it happens',ok:!r.dryDay||r.dryDay>=29},
+    {v:pct(r.lostPct,2),l:'analyst workdays lost to an empty jar',ok:r.lostPct<=0.01},
+    {v:pct(r.legitPct),l:'real CLI workdays paused by the cap',ok:r.legitPct<=0.05},
+  ];
+  $('kpis').innerHTML=items.map(i=>'<div class="kpi '+(i.ok?'pass':'fail')+'"><div class="v">'+i.v+'</div><div class="l">'+i.l+'</div><span class="st">'+(i.ok?'within guardrail':'outside guardrail')+'</span></div>').join('');
+}
+
+function memo(r,sw){
+  const b=best(sw), p=r.p;
+  const capTxt=p.cap?money(p.cap)+'/day':'no daily cap';
+  const bothOk=r.pDry<=0.05&&r.legitPct<=0.05&&r.lostPct<=0.01&&r.util>=0.75;
+  $('stamp').textContent=bothOk?'SHIP':(b||sw[0].pDry<=0.05?'SHIP WITH CHANGE':'REVISE');
+  const noCapOk=sw[0].pDry<=0.05;
+  if(noCapOk){
+    $('m-decision').innerHTML='<b>No hard daily cap needed</b> for this team shape ('+p.cli+' CLI users of 40, '+money(p.budget)+'/month): without one the jar runs dry only '+pct(sw[0].pDry)+' of months. Pre-fill the daily threshold as an <b>alert only</b>'+(b?' at '+money(b.cap)+'/day':'')+', so admins hear about runaway loops without anyone being paused.';
+  }else if(b){
+    $('m-decision').innerHTML='Pre-fill the shared Genie budget with a <b>'+money(b.cap)+' daily per-user threshold</b> for teams shaped like this one ('+p.cli+' CLI users of 40, '+money(p.budget)+'/month). It is the loosest cap that keeps the jar from running dry ≤ 5% of months.'+(p.cap!==b.cap?' The setting on screen ('+capTxt+') '+(bothOk?'also passes, but is tighter than needed.':'does not pass all guardrails.'):'');
+  }else{
+    $('m-decision').innerHTML='<b>No daily cap value passes every guardrail</b> at '+money(p.budget)+'/month with '+p.cli+' CLI users. The fix is budget sizing, not a cap: recommend the setup flow suggest a larger pool (try the budget slider) and ship the cap only as an alert.';
+  }
+  $('m-evidence').innerHTML='At '+capTxt+', '+r.n.toLocaleString('en-US')+' seeded months put P(dry) at <b>'+pct(r.pDry)+'</b> (95% band ±'+pct(1.96*r.se)+'). Analysts lose '+pct(r.lostPct,2)+' of workdays; '+pct(r.legitPct)+' of real CLI workdays hit the cap; '+pct(r.util,0)+' of the budget gets used.'+(sw[0].pDry>0?' With no cap the jar runs dry '+pct(sw[0].pDry)+' of months, mostly from runaway loops.':'');
+  $('m-risks').innerHTML='(1) The tail is the whole story: if runaway loops are more common than '+p.run+'% of CLI workdays, the cap needs to tighten. (2) A cap that pauses honest big days pushes engineers back to other tools. (3) Teams differ: one default will be wrong for very CLI-heavy accounts, so the value should scale with budget per seat.';
+  $('m-rollout').innerHTML='Shadow mode first: compute the recommended cap for every new shared budget and log "would have paused" events without pausing anyone (2 weeks). Then opt-in default for 10% of new budgets, with the webhook alert on. Expand when P(dry) and paused-real-day rates match the simulation within its error band.';
+  $('m-next').innerHTML='Pull 90 days of per-user, per-surface daily spend, refit the CLI tail and runaway rate, and re-run this exact simulation per account size bucket.';
+  $('m-vp').textContent=noCapOk?('This team already has enough headroom, so we should ship the daily threshold as an alert, not a wall, and save the hard cap for tighter budgets.'):b?('A '+money(b.cap)+' daily cap per person cuts the chance a shared Genie budget runs out early from '+pct(sw[0].pDry,0)+' to '+pct(b.pDry,0)+' while pausing only '+pct(b.legit)+' of honest CLI workdays, so we should pre-fill it and test it in shadow mode first.'):('For this team shape no cap is safe enough on its own; the setup flow should recommend a bigger shared budget and use the daily cap as an alert, not a wall.');
+  $('subtitle').textContent=r.pDry<=0.05?'the jar makes it to day 30.':'the jar runs dry before the analysts are done.';
+}
+
+function run(){
+  labels();
+  const p=params();
+  const r=simulate(p,seed,p.n,true);
+  lastSweep=sweep(p); last=r;
+  $('seed').textContent=seed;
+  kpis(r); memo(r,lastSweep); drawRunning(r); drawSweep(lastSweep,p.cap);
+  if(anim) cancelAnimationFrame(anim);
+  if(reduce){drawPaths(r,1);return;}
+  const t0=performance.now();
+  const step=t=>{const f=Math.min(1,(t-t0)/1400);drawPaths(r,f);if(f<1) anim=requestAnimationFrame(step);};
+  anim=requestAnimationFrame(step);
+}
+
+['budget','cli','cap','run','n'].forEach(id=>{$(id).addEventListener('input',labels);$(id).addEventListener('change',run);});
+$('go').addEventListener('click',run);
+$('reseed').addEventListener('click',()=>{seed=Math.floor(Math.random()*90000)+1000;run();});
+$('usebest').addEventListener('click',()=>{const b=lastSweep&&best(lastSweep);if(b){$('cap').value=b.cap;run();}});
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(last){drawPaths(last,1);drawRunning(last);drawSweep(lastSweep,last.p.cap);}},150);});
+run();
+})();
+</script>
+</body>
+</html>
